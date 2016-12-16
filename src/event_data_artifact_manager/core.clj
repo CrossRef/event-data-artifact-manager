@@ -87,22 +87,27 @@
   "Update the artifact list index."
   []
   (println "Updating artifact index...")
-  (let [artifacts-versions (latest-versions-of-all-artifacts)
-        structure (into {} (map (fn [[artifact version]]
+  ; Top-level list of all artifacts with all their info.
+  (let [now (str (clj-time/now))
+        artifacts-versions (latest-versions-of-all-artifacts)
+        artifact-list (into {} (map (fn [[artifact version]]
                                  [artifact
                                   {:name artifact
                                    :current-version version
                                    :versions-link (str (:public-base env) "/" prefix artifact "/versions.json")
-                                   :current-version-link (str (:public-base env) "/" prefix artifact "/versions/" version)}]) artifacts-versions))]
+                                   :current-version-link (str (:public-base env) "/" prefix artifact "/versions/" version)}]) artifacts-versions))
+        structure {:type "artifact-name-list" :updated now :artifacts artifact-list}]
     
     (store/set-string @connection (str prefix "artifacts.json") (json/write-str structure))
 
-    (doseq [[artifact _] artifacts-versions]
+    ; And then for each one create its full version page. Include the full info again.
+    (doseq [[artifact artifact-info] artifact-list]
       (let [versions (list-versions-for-artifact artifact)
-            structure (map #(hash-map
+            version-list (map #(hash-map
                               :version %
                               :version-link (str (:public-base env) "/" prefix artifact "/versions/" %))
                             versions)
+            structure {:type "artifact-version-list" :updated now :versions version-list :artifact artifact-info}
             k (str prefix artifact "/versions.json")]
 
         (store/set-string @connection k (json/write-str structure)))))
