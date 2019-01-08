@@ -1,0 +1,12 @@
+version: '2'
+services:
+  manager:
+    build: .
+    volumes:
+    - .:/usr/src/app
+    - ./.m2-cache:/root/.m2
+    - ./data:/usr/src/app/data
+    env_file:
+    - prod.env
+    command: "lein repl"
+
